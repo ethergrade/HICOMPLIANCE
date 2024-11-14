@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HiCompliance - Assessment</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+</head>
+<body class="container mt-5">
+    <h2 class="mb-4">HiCompliance - Assessment NIS2</h2>
+    <form id="assessmentForm">
+        <div id="assessmentContent"></div>
+        <button type="button" class="btn btn-primary mt-4" onclick="submitAssessment()">Invia Risposte</button>
+    </form>
+
+    <script>
+        // Configurazione Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnXnpt80zB_Jsr_TY4glpJtRWC_WL3GiQ",
+            authDomain: "hicompliance.firebaseapp.com",
+            projectId: "hicompliance",
+            storageBucket: "hicompliance.firebasestorage.app",
+            messagingSenderId: "532043920924",
+            appId: "1:532043920924:web:d41f4e37dff297950c91d9",
+            measurementId: "G-DWZRZCP4Q7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Dati dell'assessment
+        const assessmentData = [
+            { capitolo: 1, domande: [
+                "La tua azienda ha un piano di continuità operativa?",
+                "Sono state implementate misure di protezione contro attacchi informatici?",
+                "Le politiche di sicurezza sono state comunicate a tutto il personale?"
+            ]},
+            { capitolo: 2, domande: [
+                "Avete un sistema di monitoraggio per identificare attività sospette?",
+                "I backup dei dati sono effettuati regolarmente?",
+                "Avete procedure per la gestione degli incidenti di sicurezza?"
+            ]}
+            // Puoi aggiungere ulteriori capitoli e domande qui
+        ];
+
+        // Carica l'assessment nella pagina
+        function loadAssessment() {
+            const assessmentContent = document.getElementById('assessmentContent');
+            assessmentData.forEach((capitolo, index) => {
+                const chapterDiv = document.createElement('div');
+                chapterDiv.className = 'card mb-3 p-3';
+                chapterDiv.innerHTML = `<h4>Capitolo ${capitolo.capitolo}</h4>`;
+                capitolo.domande.forEach((domanda, domandaIndex) => {
+                    const domandaDiv = document.createElement('div');
+                    domandaDiv.className = 'form-group';
+                    domandaDiv.innerHTML = `
+                        <label for="capitolo${index}_domanda${domandaIndex}">${domanda}</label>
+                        <select class="form-control" id="capitolo${index}_domanda${domandaIndex}">
+                            <option value="">Seleziona una risposta</option>
+                            <option value="non_iniziato">Non iniziato</option>
+                            <option value="iniziato">Iniziato</option>
+                            <option value="completato">Completato</option>
+                        </select>
+                    `;
+                    chapterDiv.appendChild(domandaDiv);
+                });
+                assessmentContent.appendChild(chapterDiv);
+            });
+        }
+
+        // Funzione per inviare l'assessment
+        async function submitAssessment() {
+            const formData = {};
+            assessmentData.forEach((capitolo, index) => {
+                capitolo.domande.forEach((_, domandaIndex) => {
+                    const response = document.getElementById(`capitolo${index}_domanda${domandaIndex}`).value;
+                    formData[`capitolo${index}_domanda${domandaIndex}`] = response;
+                });
+            });
+
+            try {
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    alert('Devi essere autenticato per inviare l\'assessment.');
+                    return;
+                }
+                const userId = user.uid;
+                await db.collection('assessments').doc(userId).set(formData);
+                alert('Assessment inviato con successo!');
+                window.location.href = 'thank_you.html';
+            } catch (error) {
+                console.error('Errore durante l'invio dell'assessment:', error);
+                alert('Errore durante l'invio dell'assessment: ' + error.message);
+            }
+        }
+
+        window.onload = loadAssessment;
+    </script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
