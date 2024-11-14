@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HiCompliance - Admin</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
+</head>
+<body class="container mt-5">
+    <h2 class="mb-4">HiCompliance - Pagina Admin</h2>
+    <div id="userList" class="mb-4"></div>
+    <button class="btn btn-primary mb-4" onclick="downloadUserPDF()">Scarica PDF Utente</button>
+
+    <script>
+        // Configurazione Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnXnpt80zB_Jsr_TY4glpJtRWC_WL3GiQ",
+            authDomain: "hicompliance.firebaseapp.com",
+            projectId: "hicompliance",
+            storageBucket: "hicompliance.firebasestorage.app",
+            messagingSenderId: "532043920924",
+            appId: "1:532043920924:web:d41f4e37dff297950c91d9",
+            measurementId: "G-DWZRZCP4Q7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Funzione per visualizzare la lista degli utenti
+        async function displayUserList() {
+            const snapshot = await db.collection('users').get();
+            const userListDiv = document.getElementById('userList');
+            snapshot.forEach(doc => {
+                const userData = doc.data();
+                const userDiv = document.createElement('div');
+                userDiv.className = 'card mb-3 p-3';
+                userDiv.innerHTML = `
+                    <h5>Utente: ${userData.nome} ${userData.cognome} (${userData.azienda})</h5>
+                    <button class="btn btn-success mr-2" onclick="downloadUserPDF('${doc.id}')">Scarica PDF</button>
+                    <button class="btn btn-warning" onclick="analyzeUserPDF('${doc.id}')">Analizza PDF</button>
+                `;
+                userListDiv.appendChild(userDiv);
+            });
+        }
+
+        // Funzione per scaricare il PDF dell'utente
+        async function downloadUserPDF(userId) {
+            try {
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (!userDoc.exists) {
+                    alert('Utente non trovato.');
+                    return;
+                }
+
+                const userData = userDoc.data();
+                generatePDF(userData);
+            } catch (error) {
+                console.error('Errore durante il download del PDF:', error);
+            }
+        }
+
+        // Funzione per generare il PDF con i dati dell'utente
+        async function generatePDF(userData) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const data = new Date().toISOString().split('T')[0];
+            const fileName = `${userData.azienda}_${data}.pdf`;
+
+            // Aggiungi informazioni utente nel PDF
+            doc.text(20, 20, 'Profilo Utente');
+            doc.text(20, 40, `Nome: ${userData.nome}`);
+            doc.text(20, 50, `Cognome: ${userData.cognome}`);
+            doc.text(20, 60, `Azienda: ${userData.azienda}`);
+            doc.text(20, 70, `Email: ${userData.email}`);
+            doc.text(20, 80, `Dipendenti: ${userData.dipendenti}`);
+            doc.text(20, 90, `Indirizzo: ${userData.indirizzo}`);
+            doc.text(20, 100, `Telefono: ${userData.telefono}`);
+
+            // Salva il PDF
+            doc.save(fileName);
+        }
+
+        // Carica la lista degli utenti all'avvio
+        window.onload = displayUserList;
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
